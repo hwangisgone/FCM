@@ -216,11 +216,11 @@ function Hex2RGBA(hexCode){
 			<button disabled={!FCMInputCondition}
 				type="button"
 				on:click={handleRUN}
-				class="my-4 rounded-lg btn btn-secondary">Load data 2</button
+				class="my-4 rounded-lg btn btn-secondary">Performs clustering</button
 			>
 		</div>
 
-			<a href="/" class="underline mt-4">Back to home</a>
+			<!-- <a href="/" class="underline mt-4">Back to home</a> -->
 	</div>
 
 		<!-- Main Content Area -->
