@@ -8,7 +8,7 @@ import logging
 import eel
 import requests
 
-from .fcm import marketing_campaign
+from .fcm import marketing_campaign, load_data_csv
 
 def choose_file() -> str:
     tkinter.Tk().withdraw()
@@ -16,7 +16,7 @@ def choose_file() -> str:
     root.attributes("-alpha", 0.0)
     root.attributes("-topmost", True)
     filename = fd.askopenfilename(
-        parent=root, title="Choose a file", filetypes=[("All files", "*.*")]
+        parent=root, title="Choose a file", filetypes=[("All files", "*.csv")]
     )
     root.destroy()
     return filename

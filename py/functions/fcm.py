@@ -55,31 +55,55 @@ def FCM_And_Combine(df, C, m, eps, max_iteration):
 
 	return pd.DataFrame(U, columns=column_names), center_list
 
+##################################
+## Functions to be used outside ##
+##################################
 import os
 print(os.getcwd())
 
-## Start entering data
-df = pd.read_csv('../marketing_campaign_comma.csv')
+## Load tkinter
+import tkinter
+from tkinter import filedialog as fd
+
+## Create empty dataframe
+LOADED_DF = pd.DataFrame()
+
+def load_data_csv() -> list:
+	tkinter.Tk().withdraw()
+	root = tkinter.Tk()
+	root.attributes("-alpha", 0.0)
+	root.attributes("-topmost", True)
+
+	columns = []
+	file = fd.askopenfile(mode='r', parent=root, title="Choose a file", filetypes=[('CSV Files', '*.csv')])
+	if file:
+		global LOADED_DF
+		LOADED_DF = pd.read_csv(file)
+		print(LOADED_DF.head())
+		columns = list(LOADED_DF.columns)
+
+	root.destroy()
+	return columns
 
 
-## CLEAN UP DATA
-# Add age
-df['Age'] = 2023 - df.Year_Birth
+	# ## CLEAN UP DATA
+	# # Add age
+	# df['Age'] = 2023 - df.Year_Birth
 
-# Remove deceased people
-con1 = df.Age < 100
-# Remove super rich CEOs
-con2 = df.Income < 600000 # 600k$ / year
+	# # Remove deceased people
+	# con1 = df.Age < 100
+	# # Remove super rich CEOs
+	# con2 = df.Income < 600000 # 600k$ / year
 
-df = df.loc[con1 & con2]
-## CLEAN UP DATA
+	# df = df.loc[con1 & con2]
+	# ## CLEAN UP DATA
 
-df = df.loc[:,['Age','Income']].reset_index(drop=True)
 
-	# Printing here
-# plt.scatter(df.Age,df.Income, s=20)
-# print(df.shape)
-	# Printing here
+
+		# Printing here
+	# plt.scatter(df.Age,df.Income, s=20)
+	# print(df.shape)
+		# Printing here
 
 # Metrics
 from .cvi import dunn_fast
@@ -87,22 +111,41 @@ from sklearn.metrics import davies_bouldin_score, silhouette_score
 
 def calc_validations(points, labels) -> dict:
 	return {
-		'dunn': dunn_fast(points, labels),
-		'davies_bouldin': davies_bouldin_score(points, labels),
-		'swc': silhouette_score(points, labels)
+		'dunn': {
+			'name': "Dunn's index",
+			'result': dunn_fast(points, labels),
+			'mindiff': 0.0001
+		},
+		'davies_bouldin': {
+			'name': "Davies-Bouldin index",
+			'result': davies_bouldin_score(points, labels),
+			'mindiff': -0.01
+		},
+		'swc': {
+			'name': "Silhouette width criterion (SWC)",
+			'result': silhouette_score(points, labels),
+			'mindiff': 0.0001
+		}
 	}
 
+	return thisobj
 
 # Actual functions to be called
-def marketing_campaign(C, m, eps, max_iteration) -> dict:
-	df2, centers = FCM_And_Combine(df.copy(), C=C, m=m, eps=eps, max_iteration=max_iteration)
+def marketing_campaign(C, m, eps, max_iteration, column_array=[]) -> dict:
+	filtered_df = LOADED_DF.loc[:, column_array].reset_index(drop=True).copy()
+	filtered_df = filtered_df.dropna()
+
+	print(filtered_df.head())
+	print(C, m, eps, max_iteration)
+
+	df2, centers = FCM_And_Combine(filtered_df, C=C, m=m, eps=eps, max_iteration=max_iteration)
 	print(centers)
 
-	df3 = pd.concat([df, df2], axis=1)
-	df3 = df3.rename(columns={"Income": "x", "Age": "y"})
+	df3 = pd.concat([filtered_df.reset_index(), df2.reset_index()], axis=1)
+	df3 = df3.rename(columns={"Income": "x", "Year_Birth": "y"})
 
 	return {
 		'centroids': centers,
 		'data': df3.to_dict('records'),
-		'metrics': calc_validations(df, df2.idxmax(axis=1))
+		'metrics': calc_validations(filtered_df, df2.idxmax(axis=1))
 	}

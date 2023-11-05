@@ -24,6 +24,9 @@ function Hex2RGBA(hexCode){
 	// 9 clrs
 	const defined_colors = ['#058DC7', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4', '#FF00FF', '#111111'].map(clr => Hex2RGBA(clr));
 
+
+	let selectedColList = [];
+
 	// MY CODEEEEEEEEEEE
 	let FCMdata: Array<any> = [];
 	let C = 0;
@@ -32,23 +35,18 @@ function Hex2RGBA(hexCode){
 	let max_iteration = 0;
 
 	let validation_metrics = {};
-	let old_metrics = {}
-	const metrics_name = {
-		'dunn': "Dunn's index: ",
-		'davies_bouldin': "Davies-Bouldin index: ",
-		'swc': "Silhouette width criterion (SWC): "
-	}
 
 	let FCMclusterpoints = [];
+
+	$: console.log(selectedColList);
 
 	const handleRUN = () => {
 		isLoading = true;
 		FCMdata = [];
-		eel?.marketing_campaign(C, m, eps, max_iteration)(result => {
+		eel?.marketing_campaign(C, m, eps, max_iteration, selectedColList)(result => {
 			FCMclusterpoints.length = 0; // Empty
 			FCMdata = result.data;
 
-			old_metrics = validation_metrics;
 			validation_metrics = result.metrics;
 			let centrs = result.centroids;
 
@@ -173,15 +171,21 @@ function Hex2RGBA(hexCode){
 	// const chart = Highcharts.chart(chartOptions);
 	}
 
-	import FloatInput from './FloatInput.svelte';
-	import IntInput from './IntInput.svelte';
-	import Detached from './Detached.svelte';
+	import FloatInput from 	'./comp/FloatInput.svelte';
+	import IntInput from 	'./comp/IntInput.svelte';
+
+	import CentersTable from './comp/detached/CentersTable.svelte';
+	import GetFileColumns from 	'./comp/detached/GetFileColumns.svelte';
+
+	import MetricDisplay from './MetricDisplay.svelte';
 	import Chart from './Chart.svelte';
 
-	$: FCMInputCondition = C > 0 && max_iteration > 0
+	$: FCMInputCondition = 
+		C > 0 && m > 0 && max_iteration > 0 
+		&& selectedColList.length > 1; // At least 2 columns
 
 	// import highchartsAction, { chartPointer } from './hcaction';
-		
+
 	let chartOptions = {};
 	let theChart = { series: [] };
 </script>
@@ -192,34 +196,23 @@ function Hex2RGBA(hexCode){
 <div class="flex h-screen">
 	<!-- Left Navigation Bar -->
 	<div class="w-1/5 bg-base-300 rounded-r-lg p-3 pt-20">
-		<label for="input_C" class="label">
-			<span class="label-text">C =</span>
-		</label>
-		<IntInput id="input_C" bind:inputValue={C} />
+		<IntInput text="C = "	bind:inputValue={C} />
 
-		<label for="input_m" class="label">
-			<span class="label-text">m =</span>
-		</label>
-		<FloatInput id="input_m" bind:inputValue={m} />
+		<FloatInput text="m = "	bind:inputValue={m} />
 
-		<label for="input_eps" class="label">
-			<span class="label-text">ε (eps) = </span>
-		</label>
-		<FloatInput id="input_eps" bind:inputValue={eps} />
+		<FloatInput text="ε (eps) = "	bind:inputValue={eps} />
 
-		<label for="input_max_i" class="label">
-			<span class="label-text">Max iteration: </span>
-		</label>
-		<IntInput id="input_max_i" bind:inputValue={max_iteration} />
+		<IntInput text="Max iteration: "	bind:inputValue={max_iteration} />
 
-		<div class="flex justify-end">
+		<GetFileColumns bind:selectedColList />
+
+		<div class="grid grid-cols-1 justify-items-end">
 			<button disabled={!FCMInputCondition}
 				type="button"
 				on:click={handleRUN}
-				class="my-4 rounded-lg btn btn-secondary">Performs clustering</button
+				class="mt-4 rounded-lg btn btn-primary">Performs clustering</button
 			>
 		</div>
-
 			<!-- <a href="/" class="underline mt-4">Back to home</a> -->
 	</div>
 
@@ -231,38 +224,14 @@ function Hex2RGBA(hexCode){
 		<!-- <div id="chart-container" class="border border-primary rounded-md" use:highchartsAction={chartOptions}></div> -->
 		<Chart bind:config={chartOptions} bind:chart={theChart}/>
 
-		<Detached bind:chart={theChart} />
+		
+		<CentersTable bind:chart={theChart} />
+
 
 		{#if isLoading}
 			<Spinner />
 		{/if}
 
-		{#each Object.keys(validation_metrics) as key}
-		  <div> {metrics_name[key]}
-			{#if Object.keys(old_metrics).length !== 0}
-				{#if key == 'davies_bouldin'}
-					<div class:better-metric={validation_metrics[key] - old_metrics[key] < -0.01}>
-						{validation_metrics[key]}
-						{#if validation_metrics[key] - old_metrics[key] < -0.01}📈 
-						({Math.round((validation_metrics[key] * 10000)/old_metrics[key] - 10000) / 100}%){/if}
-					</div>
-				{:else}
-					<div class:better-metric={validation_metrics[key] - old_metrics[key] > 0.0001}>
-						{validation_metrics[key]}
-						{#if validation_metrics[key] - old_metrics[key] > 0.0001}📈 
-						(+{Math.round((validation_metrics[key] * 10000)/old_metrics[key] - 10000) / 100}%){/if}
-					</div>
-				{/if}
-			{:else}
-				<div> {validation_metrics[key]}</div>
-			{/if}
-		  </div>
-		{/each}
+		<MetricDisplay bind:input_metrics={validation_metrics} />
 	</div>
 </div>
-
-<style>
-	.better-metric {
-		@apply text-success font-medium;
-	}
-</style>
