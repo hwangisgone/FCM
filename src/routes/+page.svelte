@@ -26,149 +26,148 @@ function Hex2RGBA(hexCode){
 
 
 	let selectedColList = [];
+	let selectedLabel = "";
 
 	// MY CODEEEEEEEEEEE
-	let FCMdata: Array<any> = [];
 	let C = 0;
 	let m = 0;
 	let eps = 0;
 	let max_iteration = 0;
 
+	let FCMdata: Array<any> = [];
 	let validation_metrics = {};
-
-	let FCMclusterpoints = [];
+	let centrs = [];
 
 	$: console.log(selectedColList);
+
+	let gotData = false;
 
 	const handleRUN = () => {
 		isLoading = true;
 		FCMdata = [];
-		eel?.marketing_campaign(C, m, eps, max_iteration, selectedColList)(result => {
-			FCMclusterpoints.length = 0; // Empty
-			FCMdata = result.data;
+		chartOptions = {};
 
-			validation_metrics = result.metrics;
-			let centrs = result.centroids;
-
+		eel?.marketing_campaign(C, m, eps, max_iteration, selectedColList, selectedLabel)(result => {
 			isLoading = false;
+			gotData = true;
 
-
-			for (let i = 0; i < centrs.length; i++) {
-				const key = centrs[i].name;
-
-				const str_clr = defined_colors[i % defined_colors.length]
-				const clusterpoint = FCMdata.map(
-					p => { return {x: p.x, y: p.y, color: str_clr + p[key] + ')'} 
-				});
-
-				FCMclusterpoints.push({
-					data: clusterpoint, 
-					name: key, 
-					color: str_clr + '1)', 
-					zIndex: 0,
-					id: key,
-					enableMouseTracking: false
-				});
-				FCMclusterpoints.push({
-					data: [[centrs[i].x, centrs[i].y]], 
-					name: 'Center of ' + key, 
-					color: str_clr + '1)',
-					marker: {
-						fillColor: '#FFFFFF',
-						lineColor: '#000000',
-						symbol: 'diamond',
-						lineWidth: 2,
-						radius: 5,
-						// states: {
-						// 	hover: {
-						// 		enabled: true,
-						// 		radiusPlus: 5 // Increase the hover interaction range
-						// 	}
-						// }
-					},
-					zIndex: 1,
-					linkedTo: key,
-					dataLabels: {
-						enabled: true,
-						format: '{y}</br>{x} $',
-						y: -10
-					}
-				});
-			}
-			
-			// for (const key in FCMdata[0]) {
-			// 	if (key !== 'x' && key !== 'y') {
-			// 		console.log(`i: ${i}, Key: ${key}`);
-
-			// 		const clusterpoint = FCMdata.map(
-			// 			p => { return {x: p.x, y: p.y, color: defined_colors[i] + p[key] + ')'} 
-			// 		});
-
-			// 		FCMclusterpoints.push({data: clusterpoint, name: key, color: defined_colors[i] + '1)'});
-
-			// 		i++;
-			// 		i = i % defined_colors.length;
-			// 	}
-			// }
-
-			console.log(FCMclusterpoints);
-	theChart = theChart;
-	chartOptions = { 
-		chart: { 
-			renderTo: 'chart-container', 
-			type: 'scatter',
-			zooming: {
-				mouseWheel: true
-			} 
-		},
-		title: {
-			text: 'Scatter Plot'
-		},
-		xAxis: {
-			title: {
-				text: 'Income'
-			}
-		},
-		yAxis: {
-			title: {
-				text: 'Age'
-			}
-		},
-		legend: {
-			enabled: true
-		},
-		plotOptions: {
-			scatter: {
-				marker: {
-					radius: 2.5,
-					symbol: 'circle',
-					states: {
-						hover: {
-							enabled: true,
-							lineColor: 'rgb(100,100,100)'
-						}
-					}
-				},
-				states: {
-					hover: {
-						marker: {
-							enabled: false
-						}
-					}
-				},
-				tooltip: {
-					pointFormat: 'Age: {point.y}<br/> Income: {point.x} $'
-				},
-			},
-			series: {
-				turboThreshold: 100000
-			}
-		},
-		series: FCMclusterpoints
-	};
+			FCMdata = result.data;
+			validation_metrics = result.metrics;
+			centrs = result.centroids;
 		});	
 
 	// const chart = Highcharts.chart(chartOptions);
+	}
+
+	let selectedX = "";
+	let selectedY = "";
+	let FCMclusterpoints = [];
+
+	const handleDRAW = () => {
+		FCMclusterpoints.length = 0; // Empty the drawing series
+
+		// Drawing points
+		for (let i = 0; i < centrs.length; i++) {
+			const key = centrs[i].name;
+
+			const str_clr = defined_colors[i % defined_colors.length]
+			const clusterpoint = FCMdata.map(
+				p => { return {x: p[selectedX], y: p[selectedY], color: str_clr + p[key] + ')'} 
+			});
+
+			const centerX = Math.round(centrs[i][selectedX] * 100) / 100
+			const centerY = Math.round(centrs[i][selectedY] * 100) / 100
+
+			FCMclusterpoints.push({
+				data: clusterpoint, 
+				name: key, 
+				color: str_clr + '1)', 
+				zIndex: 0,
+				id: key,
+				enableMouseTracking: false
+			});
+			FCMclusterpoints.push({
+				data: [[centerX, centerY]], 
+				name: 'Center of ' + key, 
+				color: str_clr + '1)',
+				marker: {
+					fillColor: '#FFFFFF',
+					lineColor: '#000000',
+					symbol: 'diamond',
+					lineWidth: 2,
+					radius: 5,
+					// states: {
+					// 	hover: {
+					// 		enabled: true,
+					// 		radiusPlus: 5 // Increase the hover interaction range
+					// 	}
+					// }
+				},
+				zIndex: 1,
+				linkedTo: key,
+				dataLabels: {
+					enabled: true,
+					format: 'Y: {y}</br>X: {x}',
+					y: -10
+				}
+			});
+		}
+
+				console.log(FCMclusterpoints);
+		theChart = theChart;
+		chartOptions = { 
+			chart: { 
+				renderTo: 'chart-container', 
+				type: 'scatter',
+				zooming: {
+					mouseWheel: true
+				} 
+			},
+			title: {
+				text: 'Scatter Plot'
+			},
+			xAxis: {
+				title: {
+					text: selectedX
+				}
+			},
+			yAxis: {
+				title: {
+					text: selectedY
+				}
+			},
+			legend: {
+				enabled: true
+			},
+			plotOptions: {
+				scatter: {
+					marker: {
+						radius: 2.5,
+						symbol: 'circle',
+						states: {
+							hover: {
+								enabled: true,
+								lineColor: 'rgb(100,100,100)'
+							}
+						}
+					},
+					states: {
+						hover: {
+							marker: {
+								enabled: false
+							}
+						}
+					},
+					tooltip: {
+						pointFormat: selectedX + ': {point.x}<br/>' + selectedY + ': {point.y}'
+					},
+				},
+				series: {
+					turboThreshold: 100000
+				}
+			},
+			series: FCMclusterpoints
+		};
 	}
 
 	import FloatInput from 	'./comp/FloatInput.svelte';
@@ -176,6 +175,7 @@ function Hex2RGBA(hexCode){
 
 	import CentersTable from './comp/detached/CentersTable.svelte';
 	import GetFileColumns from 	'./comp/detached/GetFileColumns.svelte';
+	import DrawWindow from './comp/detached/DrawWindow.svelte';
 
 	import MetricDisplay from './MetricDisplay.svelte';
 	import Chart from './Chart.svelte';
@@ -204,13 +204,16 @@ function Hex2RGBA(hexCode){
 
 		<IntInput text="Max iteration: "	bind:inputValue={max_iteration} />
 
-		<GetFileColumns bind:selectedColList />
+		<!-- Bind: Two-way binding of prop -->
+		<GetFileColumns bind:selectedColList bind:selectedLabel/>
+		<!-- Pass prop down one-way -->
+		<DrawWindow {selectedColList} {handleDRAW} bind:selectedX bind:selectedY />
 
-		<div class="grid grid-cols-1 justify-items-end">
+		<div class="grid grid-cols-1 gap-4 my-4 justify-items-end">
 			<button disabled={!FCMInputCondition}
 				type="button"
 				on:click={handleRUN}
-				class="mt-4 rounded-lg btn btn-primary">Performs clustering</button
+				class="btn btn-accent">Performs clustering</button
 			>
 		</div>
 			<!-- <a href="/" class="underline mt-4">Back to home</a> -->
@@ -226,7 +229,6 @@ function Hex2RGBA(hexCode){
 
 		
 		<CentersTable bind:chart={theChart} />
-
 
 		{#if isLoading}
 			<Spinner />

@@ -43,13 +43,14 @@ def FCM_And_Combine(df, C, m, eps, max_iteration):
 		U = U_new
 		
 	column_names = []
-	center_list = []	
+	center_list = []
 	for i in range(0, U.shape[1]):
 		clustername = f'Cluster {i+1}'
 		column_names.append(clustername)
+		print(clustername, Centroids[i])
+
 		center_list.append({
-			'y': round(Centroids[i][0], 2),
-			'x': round(Centroids[i][1], 2),
+			'centroids': Centroids[i],
 			'name': clustername
 		})
 
@@ -67,6 +68,7 @@ from tkinter import filedialog as fd
 
 ## Create empty dataframe
 LOADED_DF = pd.DataFrame()
+RESULT_DF = pd.DataFrame()
 
 def load_data_csv() -> list:
 	tkinter.Tk().withdraw()
@@ -107,9 +109,23 @@ def load_data_csv() -> list:
 
 # Metrics
 from .cvi import dunn_fast
-from sklearn.metrics import davies_bouldin_score, silhouette_score
+from sklearn.metrics import davies_bouldin_score, silhouette_score, rand_score, adjusted_rand_score
 
-def calc_validations(points, labels) -> dict:
+def calc_external_validations(targets, predictions) -> dict:
+	return {
+		'rand': {
+			'name': "Rand index",
+			'result': rand_score(targets, predictions),
+			'mindiff': 0.0001
+		},
+		'adjrand': {
+			'name': "Adjusted Rand index (ARI)",
+			'result': adjusted_rand_score(targets, predictions),
+			'mindiff': 0.0001
+		}
+	}
+
+def calc_relative_validations(points, labels) -> dict:
 	return {
 		'dunn': {
 			'name': "Dunn's index",
@@ -128,24 +144,39 @@ def calc_validations(points, labels) -> dict:
 		}
 	}
 
-	return thisobj
-
 # Actual functions to be called
-def marketing_campaign(C, m, eps, max_iteration, column_array=[]) -> dict:
+def marketing_campaign(C, m, eps, max_iteration, column_array=[], column_labeled="") -> dict:
 	filtered_df = LOADED_DF.loc[:, column_array].reset_index(drop=True).copy()
 	filtered_df = filtered_df.dropna()
 
 	print(filtered_df.head())
 	print(C, m, eps, max_iteration)
 
-	df2, centers = FCM_And_Combine(filtered_df, C=C, m=m, eps=eps, max_iteration=max_iteration)
-	print(centers)
+	# Save as global to display later
+	result_df2, centers_list = FCM_And_Combine(filtered_df, C=C, m=m, eps=eps, max_iteration=max_iteration)
 
-	df3 = pd.concat([filtered_df.reset_index(), df2.reset_index()], axis=1)
-	df3 = df3.rename(columns={"Income": "x", "Year_Birth": "y"})
+	# Fix center naming
+	for center in centers_list:
+		for idx, col in enumerate(column_array):
+			center[col] = center['centroids'][idx]
+		del center['centroids']
 
-	return {
-		'centroids': centers,
+	# Concat to one giant data
+	df3 = pd.concat([filtered_df.reset_index(drop=True), result_df2.reset_index(drop=True)], axis=1)
+	print(df3.head())
+
+	datadict = {
+		'centroids': centers_list,
 		'data': df3.to_dict('records'),
-		'metrics': calc_validations(filtered_df, df2.idxmax(axis=1))
+		'metrics': calc_relative_validations(filtered_df, result_df2.idxmax(axis=1)) # Chosing one label for each point based on the highest value
 	}
+
+	if column_labeled != "":
+		# Rename target and prediction columns to numbers
+		preds = pd.factorize(result_df2.idxmax(axis=1))[0]		# Return codes: nparray, uniques: nparray
+		targets = pd.factorize(LOADED_DF.dropna(subset=column_array)[column_labeled])[0]	# Return codes: nparray, uniques: nparray
+
+		datadict['metrics'].update(calc_external_validations(targets, preds))
+
+	return datadict
+		
