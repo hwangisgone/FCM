@@ -8,7 +8,7 @@ import logging
 import eel
 import requests
 
-from .fcm import marketing_campaign, load_data_csv
+from .fcm import marketing_campaign, load_data_csv, get_original_df
 
 def choose_file() -> str:
     tkinter.Tk().withdraw()
@@ -21,19 +21,3 @@ def choose_file() -> str:
     root.destroy()
     return filename
 
-
-def hello_from_eel(name: str):
-    logging.info(f"Hello from eel, {name}!")
-    eel.hello_from_sk("World")
-
-
-def get_data() -> list:
-    url = "https://dummyjson.com/products?limit=10"
-    try:
-        response = requests.get(url)
-        eel.sleep(2)
-        return response.json().get("products")
-    except Exception as e:
-        logging.error(f"Failed to get data from {url}")
-        logging.error(e)
-        return []

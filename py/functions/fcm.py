@@ -107,6 +107,7 @@ def load_data_csv() -> list:
 	# print(df.shape)
 		# Printing here
 
+from .ssfcm import ss_FCM_And_Combine
 # Metrics
 from .cvi import dunn_fast
 from sklearn.metrics import davies_bouldin_score, silhouette_score, rand_score, adjusted_rand_score
@@ -144,8 +145,24 @@ def calc_relative_validations(points, labels) -> dict:
 		}
 	}
 
+def get_original_df(C, column_array=[]):
+	filtered_df = LOADED_DF.loc[:, column_array].reset_index(drop=True).copy()
+	filtered_df = filtered_df.dropna()
+
+	column_names = []
+	for i in range(0, C):
+		clustername = f'Cluster {i+1}'
+		column_names.append(clustername)
+
+	U_empty = pd.DataFrame(np.zeros((filtered_df.shape[0], C)), columns=column_names)
+	# df3 = pd.concat([filtered_df.reset_index(drop=True), U_empty.reset_index(drop=True)], axis=1)
+	return {
+		'U_s': U_empty.reset_index().to_dict('records'),
+		'data': filtered_df.to_dict('records')
+	}
+
 # Actual functions to be called
-def marketing_campaign(C, m, eps, max_iteration, column_array=[], column_labeled="") -> dict:
+def marketing_campaign(C, m, eps, max_iteration, column_array=[], column_labeled="", U_semisv=[]) -> dict:
 	filtered_df = LOADED_DF.loc[:, column_array].reset_index(drop=True).copy()
 	filtered_df = filtered_df.dropna()
 
@@ -153,7 +170,16 @@ def marketing_campaign(C, m, eps, max_iteration, column_array=[], column_labeled
 	print(C, m, eps, max_iteration)
 
 	# Save as global to display later
-	result_df2, centers_list = FCM_And_Combine(filtered_df, C=C, m=m, eps=eps, max_iteration=max_iteration)
+	if not U_semisv:
+		result_df2, centers_list = FCM_And_Combine(filtered_df, C=C, m=m, eps=eps, max_iteration=max_iteration)
+	else:
+		print(U_semisv)
+		U_s = np.zeros((filtered_df.shape[0], C))
+		for point in U_semisv:
+			for j in range(1, C + 1):
+				U_s[point['index'], j - 1] = point[f'Cluster {j}']
+
+		result_df2, centers_list = ss_FCM_And_Combine(filtered_df, U_s=U_s, C=C, m=m, eps=eps, max_iteration=max_iteration)
 
 	# Fix center naming
 	for center in centers_list:

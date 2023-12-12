@@ -37,6 +37,7 @@ function Hex2RGBA(hexCode){
 	let FCMdata: Array<any> = [];
 	let validation_metrics = {};
 	let centrs = [];
+	let U_semisupervised = [];
 
 	$: console.log(selectedColList);
 
@@ -47,15 +48,19 @@ function Hex2RGBA(hexCode){
 		FCMdata = [];
 		chartOptions = {};
 
-		eel?.marketing_campaign(C, m, eps, max_iteration, selectedColList, selectedLabel)(result => {
+		const U_ssfiltered = U_semisupervised.filter(obj => {
+			// Check if any cluster value is not equal to 0
+			return Object.keys(obj).some(key => key !== 'index' && obj[key] !== 0);
+		});
+
+		eel?.marketing_campaign(C, m, eps, max_iteration, selectedColList, selectedLabel, U_ssfiltered)(result => {
 			isLoading = false;
 			gotData = true;
 
 			FCMdata = result.data;
 			validation_metrics = result.metrics;
 			centrs = result.centroids;
-		});	
-
+		});
 	// const chart = Highcharts.chart(chartOptions);
 	}
 
@@ -63,58 +68,7 @@ function Hex2RGBA(hexCode){
 	let selectedY = "";
 	let FCMclusterpoints = [];
 
-	const handleDRAW = () => {
-		FCMclusterpoints.length = 0; // Empty the drawing series
-
-		// Drawing points
-		for (let i = 0; i < centrs.length; i++) {
-			const key = centrs[i].name;
-
-			const str_clr = defined_colors[i % defined_colors.length]
-			const clusterpoint = FCMdata.map(
-				p => { return {x: p[selectedX], y: p[selectedY], color: str_clr + p[key] + ')'} 
-			});
-
-			const centerX = Math.round(centrs[i][selectedX] * 100) / 100
-			const centerY = Math.round(centrs[i][selectedY] * 100) / 100
-
-			FCMclusterpoints.push({
-				data: clusterpoint, 
-				name: key, 
-				color: str_clr + '1)', 
-				zIndex: 0,
-				id: key,
-				enableMouseTracking: false
-			});
-			FCMclusterpoints.push({
-				data: [[centerX, centerY]], 
-				name: 'Center of ' + key, 
-				color: str_clr + '1)',
-				marker: {
-					fillColor: '#FFFFFF',
-					lineColor: '#000000',
-					symbol: 'diamond',
-					lineWidth: 2,
-					radius: 5,
-					// states: {
-					// 	hover: {
-					// 		enabled: true,
-					// 		radiusPlus: 5 // Increase the hover interaction range
-					// 	}
-					// }
-				},
-				zIndex: 1,
-				linkedTo: key,
-				dataLabels: {
-					enabled: true,
-					format: 'Y: {y}</br>X: {x}',
-					y: -10
-				}
-			});
-		}
-
-				console.log(FCMclusterpoints);
-		theChart = theChart;
+	const setChartOptions = () => {
 		chartOptions = { 
 			chart: { 
 				renderTo: 'chart-container', 
@@ -170,19 +124,135 @@ function Hex2RGBA(hexCode){
 		};
 	}
 
+	const handleDRAW = () => {
+		FCMclusterpoints.length = 0; // Empty the drawing series
+
+		// Drawing points
+		for (let i = 0; i < centrs.length; i++) {
+			const key = centrs[i].name;
+
+			const str_clr = defined_colors[i % defined_colors.length]
+			const clusterpoint = FCMdata.map(
+				p => { return {x: p[selectedX], y: p[selectedY], color: str_clr + p[key] + ')'} 
+			});
+
+			const centerX = Math.round(centrs[i][selectedX] * 100) / 100
+			const centerY = Math.round(centrs[i][selectedY] * 100) / 100
+
+			FCMclusterpoints.push({
+				data: clusterpoint, 
+				name: key, 
+				color: str_clr + '1)', 
+				zIndex: 0,
+				id: key,
+				enableMouseTracking: false
+			});
+			FCMclusterpoints.push({
+				data: [[centerX, centerY]], 
+				name: 'Center of ' + key, 
+				color: str_clr + '1)',
+				marker: {
+					fillColor: '#FFFFFF',
+					lineColor: '#000000',
+					symbol: 'diamond',
+					lineWidth: 2,
+					radius: 5,
+					// states: {
+					// 	hover: {
+					// 		enabled: true,
+					// 		radiusPlus: 5 // Increase the hover interaction range
+					// 	}
+					// }
+				},
+				zIndex: 1,
+				linkedTo: key,
+				dataLabels: {
+					enabled: true,
+					format: 'Y: {y}</br>X: {x}',
+					y: -10
+				}
+			});
+		}
+
+		//		console.log(FCMclusterpoints);
+		theChart = theChart;
+		setChartOptions();
+	}
+
+	let initSS = false;
+	let selectedIndex = false;
+	let previousPoint = null;
+
+	const initialDRAW = () => {
+		isLoading = true;
+		FCMdata = [];
+		chartOptions = {};
+
+		eel?.get_original_df(C, selectedColList)(result => {
+			isLoading = false;
+			initSS = true;
+			FCMdata = result.data;
+			U_semisupervised = result.U_s;
+			
+			// Empty the drawing series
+			FCMclusterpoints.length = 0; 
+			// Drawing points
+			const clusterpoint = FCMdata.map(
+				p => { return {x: p[selectedX], y: p[selectedY], index: p['index']} 
+			});
+
+			FCMclusterpoints.push({
+				data: clusterpoint, 
+				name: 'Point', 
+				color: '#111122', 
+				zIndex: 0,
+				enableMouseTracking: true,
+				allowPointSelect: true,
+				point: {
+					events: {
+						click: function() {
+							// if(previousPoint)
+							// 	previousPoint.update({color: previousPoint.originalColor});
+							// Set this points color to black
+							this.update({color: 'red', originalColor: this.color});
+							// Make it our previous point
+							selectedIndex = this.index;
+							// console.log("Index = " + this.index);
+							// console.log(FCMdata[this.index]);
+							// previousPoint = this;
+						}
+					}
+				}
+			});
+
+			theChart = theChart;
+			setChartOptions();
+		});
+	}
+
+	const maybeDRAW = () => {
+		if (centrs.length == 0) {
+			initialDRAW();
+		} else {
+			handleDRAW();
+		}
+	}
+
 	import FloatInput from 	'./comp/FloatInput.svelte';
 	import IntInput from 	'./comp/IntInput.svelte';
 
 	import CentersTable from './comp/detached/CentersTable.svelte';
 	import GetFileColumns from 	'./comp/detached/GetFileColumns.svelte';
 	import DrawWindow from './comp/detached/DrawWindow.svelte';
+	import AssignPointValue from './comp/detached/AssignPointValue.svelte';
 
 	import MetricDisplay from './MetricDisplay.svelte';
 	import Chart from './Chart.svelte';
 
 	$: FCMInputCondition = 
 		C > 0 && m > 0 && max_iteration > 0 
-		&& selectedColList.length > 1; // At least 2 columns
+		&& selectedColList.length > 1  // At least 2 columns
+		&& initSS;  // Already drawn the graph once
 
 	// import highchartsAction, { chartPointer } from './hcaction';
 
@@ -207,7 +277,9 @@ function Hex2RGBA(hexCode){
 		<!-- Bind: Two-way binding of prop -->
 		<GetFileColumns bind:selectedColList bind:selectedLabel/>
 		<!-- Pass prop down one-way -->
-		<DrawWindow {selectedColList} {handleDRAW} bind:selectedX bind:selectedY />
+		<DrawWindow {selectedColList} handleDRAW={maybeDRAW} bind:selectedX bind:selectedY />
+
+		<AssignPointValue bind:U_semisupervised index={selectedIndex} />
 
 		<div class="grid grid-cols-1 gap-4 my-4 justify-items-end">
 			<button disabled={!FCMInputCondition}
