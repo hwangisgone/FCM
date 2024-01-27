@@ -4,15 +4,19 @@
 	export let selectedColList = [];
 	export let selectedX = "";
 	export let selectedY = "";
-	export let handleDRAW;
+	export let drawFunction;
+
 
 </script>
 
-<Detached text="Drawing" wStart=0.22 hStart=0.7>
+<Detached text="Graph" wStart=0.075 hStart=0.4>
 	<div class="p-2 grid grid-cols-5 gap-2">
 		<span>X:</span>
 		<select class="select select-bordered select-secondary select-xs w-32 col-span-4"
-			bind:value={selectedX} >
+			bind:value={selectedX} on:change={drawFunction}>
+			{#if selectedColList.length == 2}
+				<option value=""></option>	
+			{/if}
 			{#each selectedColList as value}
 				{#if value !== selectedY}
 					<option {value}>{value}</option>
@@ -22,7 +26,7 @@
 
 		<span>Y:</span>
 		<select class="select select-bordered select-secondary select-xs w-32 col-span-4"
-			bind:value={selectedY} >
+			bind:value={selectedY} on:change={drawFunction}>
 			{#each selectedColList as value}
 				{#if value !== selectedX}
 					<option {value}>{value}</option>
@@ -32,8 +36,8 @@
 
 		<button disabled={!(selectedX != "" && selectedY != "")}
 			type="button"
-			on:click={handleDRAW}
-			class="btn btn-primary col-span-5">Draw Graph</button
+			on:click={drawFunction}
+			class="btn btn-primary col-span-5">Update Graph</button
 		>
 	</div>
 </Detached>

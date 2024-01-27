@@ -22,7 +22,6 @@
 		moving = false;
 	}
 
-	let collapse = false;
 </script>
 
 <svelte:window on:mouseup={onMouseUp} on:mousemove={onMouseMove} />
@@ -33,10 +32,9 @@
 	<!-- Title -->
 	<div class="bg-primary drag-mouse text-base-200 text-center font-semibold px-4" 
 		on:mousedown={onMouseDown}>{text}
-		<input type="checkbox" class="checkbox" bind:checked={collapse} />
 	</div>
 
-	<div class:block={!collapse} class:none={collapse}>
+	<div>
 		<slot />
 	</div>
 </div>

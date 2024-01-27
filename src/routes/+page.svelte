@@ -231,10 +231,12 @@ function Hex2RGBA(hexCode){
 	}
 
 	const maybeDRAW = () => {
-		if (centrs.length == 0) {
-			initialDRAW();
-		} else {
-			handleDRAW();
+		if (selectedX != "" && selectedY != "") {
+			if (centrs.length == 0) {
+				initialDRAW();
+			} else {
+				handleDRAW();
+			}
 		}
 	}
 
@@ -265,26 +267,24 @@ function Hex2RGBA(hexCode){
 
 <div class="flex h-screen">
 	<!-- Left Navigation Bar -->
-	<div class="w-1/5 bg-base-300 rounded-r-lg p-3 pt-20">
-		<IntInput text="C = "	bind:inputValue={C} />
-
-		<FloatInput text="m = "	bind:inputValue={m} />
-
-		<FloatInput text="ε (eps) = "	bind:inputValue={eps} />
-
-		<IntInput text="Max iteration: "	bind:inputValue={max_iteration} />
-
+	<div class="w-1/5 bg-base-300 rounded-r-lg p-3">
 		<!-- Bind: Two-way binding of prop -->
 		<GetFileColumns bind:selectedColList bind:selectedLabel/>
 		<!-- Pass prop down one-way -->
-		<DrawWindow {selectedColList} handleDRAW={maybeDRAW} bind:selectedX bind:selectedY />
+		<DrawWindow {selectedColList} drawFunction={maybeDRAW} bind:selectedX bind:selectedY />
+
+		<IntInput text="C = "	bind:inputValue={C} />
+		<FloatInput text="m = "	bind:inputValue={m} />
+		<FloatInput text="ε (eps) = "	bind:inputValue={eps} />
+		<IntInput text="Max iteration: "	bind:inputValue={max_iteration} />
+
 
 		<AssignPointValue bind:U_semisupervised index={selectedIndex} />
 
 		<div class="grid grid-cols-1 gap-4 my-4 justify-items-end">
 			<button disabled={!FCMInputCondition}
 				type="button"
-				on:click={handleRUN}
+				on:click={() => {handleRUN(); } }
 				class="btn btn-accent">Performs clustering</button
 			>
 		</div>

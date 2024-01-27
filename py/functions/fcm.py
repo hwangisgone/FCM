@@ -80,32 +80,14 @@ def load_data_csv() -> list:
 	file = fd.askopenfile(mode='r', parent=root, title="Choose a file", filetypes=[('CSV Files', '*.csv')])
 	if file:
 		global LOADED_DF
-		LOADED_DF = pd.read_csv(file)
+		# Only load numberic columns
+		LOADED_DF = pd.read_csv(file).select_dtypes(include=np.number)
 		print(LOADED_DF.head())
 		columns = list(LOADED_DF.columns)
 
 	root.destroy()
 	return columns
 
-
-	# ## CLEAN UP DATA
-	# # Add age
-	# df['Age'] = 2023 - df.Year_Birth
-
-	# # Remove deceased people
-	# con1 = df.Age < 100
-	# # Remove super rich CEOs
-	# con2 = df.Income < 600000 # 600k$ / year
-
-	# df = df.loc[con1 & con2]
-	# ## CLEAN UP DATA
-
-
-
-		# Printing here
-	# plt.scatter(df.Age,df.Income, s=20)
-	# print(df.shape)
-		# Printing here
 
 from .ssfcm import ss_FCM_And_Combine
 # Metrics

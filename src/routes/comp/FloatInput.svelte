@@ -25,7 +25,7 @@
 	</label>
 	<input id={elID}
 		type="number"
-		class="input input-bordered input-primary rounded-lg w-100"
+		class="input input-bordered input-primary rounded-lg w-100 h-10"
 		min="0.0"
 		bind:value={inputValue}
 		on:change={handleInputChange}
