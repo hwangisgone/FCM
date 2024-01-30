@@ -23,7 +23,7 @@
 	// }
 </script>
 
-<Detached text="Cluster centers" wStart=0.6 hStart=0.7>
+<Detached text="Cluster centers" wStart=0.45 hStart=0.65>
 	<table class="table table-xs table-pin-rows w-72 " on:mouseout={() => hoverNormalAll()} on:blur={() => hoverNormalAll()}>
 		<thead>
 			<tr class="">

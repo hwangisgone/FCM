@@ -1,6 +1,4 @@
 <script lang="ts">
-	import Detached from 	'./Detached.svelte';
-
 	export let selectedColList = [];
 	export let selectedLabel = "";
 

@@ -186,7 +186,7 @@ function Hex2RGBA(hexCode){
 	const initialDRAW = () => {
 		isLoading = true;
 		FCMdata = [];
-		chartOptions = {};
+
 
 		eel?.get_original_df(C, selectedColList)(result => {
 			isLoading = false;
@@ -200,6 +200,7 @@ function Hex2RGBA(hexCode){
 			const clusterpoint = FCMdata.map(
 				p => { return {x: p[selectedX], y: p[selectedY], index: p['index']} 
 			});
+
 
 			FCMclusterpoints.push({
 				data: clusterpoint, 
@@ -225,8 +226,12 @@ function Hex2RGBA(hexCode){
 				}
 			});
 
+
+console.log(FCMclusterpoints);
 			theChart = theChart;
 			setChartOptions();
+
+				console.log("wtf?");
 		});
 	}
 
@@ -242,14 +247,14 @@ function Hex2RGBA(hexCode){
 
 	import FloatInput from 	'./comp/FloatInput.svelte';
 	import IntInput from 	'./comp/IntInput.svelte';
+	import GetFileColumns from 	'./comp/GetFileColumns.svelte';
 
 	import CentersTable from './comp/detached/CentersTable.svelte';
-	import GetFileColumns from 	'./comp/detached/GetFileColumns.svelte';
 	import DrawWindow from './comp/detached/DrawWindow.svelte';
 	import AssignPointValue from './comp/detached/AssignPointValue.svelte';
 
-	import MetricDisplay from './MetricDisplay.svelte';
-	import Chart from './Chart.svelte';
+	import MetricDisplay from './comp/MetricDisplay.svelte';
+	import Chart from './comp/Chart.svelte';
 
 	$: FCMInputCondition = 
 		C > 0 && m > 0 && max_iteration > 0 

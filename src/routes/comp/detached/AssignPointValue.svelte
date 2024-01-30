@@ -5,6 +5,7 @@
 	export let index = 0;
 
 	const generator = (idx) => {
+		console.log(U_semisupervised);
 		const result = [];
 		if (U_semisupervised.length > 0) {
 			const point = U_semisupervised[idx];
@@ -61,7 +62,7 @@
 
 </script>
 
-<Detached text="Semi-supervised points" wStart=0.22 hStart=0.7>
+<Detached text="Semi-supervised points" wStart=0.7 hStart=0.65>
 	{#each sliders as {name, percentage}}
 	<div>
 		<input type="range" min="0" max="1" step="0.01" data-name={name} value={percentage} on:input={handleInput} />
