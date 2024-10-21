@@ -7,7 +7,7 @@ The project was bootstrapped with create-sveltekit-eel-app, which makes use of t
 - SvelteKit: ["A framework for rapidly developing robust, performant web applications using Svelte"](https://kit.svelte.dev/docs/introduction)
   - SvelteKit will be running in SPA mode.
 
-### Quickstart
+## Quickstart
 Before development, install required dependencies for both front-end and Python back-end
 
 ```
